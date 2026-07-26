@@ -123,6 +123,11 @@ return {
   {
     "goolord/alpha-nvim",
     event = "VimEnter",
+    cond = function()
+      -- The dashboard is useful only for a truly empty launch. A directory
+      -- argument is handled by NvimTree instead.
+      return vim.fn.argc() == 0
+    end,
     dependencies = { "nvim-tree/nvim-web-devicons" },
     config = function()
       local dashboard = require("alpha.themes.dashboard")
@@ -151,6 +156,28 @@ return {
     keys = {
       { "<leader>y", "<Cmd>NvimTreeToggle<CR>", desc = "File explorer" },
     },
+    init = function()
+      local group = vim.api.nvim_create_augroup("user_directory_explorer", { clear = true })
+      vim.api.nvim_create_autocmd("VimEnter", {
+        group = group,
+        once = true,
+        callback = function()
+          if vim.fn.argc() ~= 1 then
+            return
+          end
+
+          local argument = vim.fn.argv(0)
+          if vim.fn.isdirectory(argument) ~= 1 then
+            return
+          end
+
+          local directory = vim.fs.normalize(vim.fn.fnamemodify(argument, ":p"))
+          vim.cmd.cd(vim.fn.fnameescape(directory))
+          require("lazy").load({ plugins = { "nvim-tree.lua" } })
+          require("nvim-tree.api").tree.open({ path = directory })
+        end,
+      })
+    end,
     dependencies = { "nvim-tree/nvim-web-devicons" },
     opts = {
       disable_netrw = true,
@@ -164,6 +191,7 @@ return {
       renderer = {
         group_empty = true,
         highlight_git = true,
+        indent_markers = { enable = true },
       },
     },
   },
