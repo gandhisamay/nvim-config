@@ -67,7 +67,7 @@ local robust = {
   [[     ╚══════╝   ╚═╝    ╚═════╝ ╚═╝     ╚═╝          ]],
 }
 
-local headers = {cool, robust}
+local headers = { cool, robust }
 
 local function header_chars()
   math.randomseed(os.time())

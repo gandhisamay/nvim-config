@@ -21,11 +21,15 @@ using namespace std;
 #define bfor(i, r, l) for (int i = r; i >= l; --i)
 #define endl "\n";
 #define all(a) a.begin(), a.end()
+#define int long long
 using ll = long long;
 using vi = vector<int>;
 using ld = long double;
 using pii = pair<int, int>;
 using vvi = vector<vector<int>>;
+
+const int INF = 1e18;
+const int NINF = -1e18;
 
 struct custom_hash
 {{
@@ -85,7 +89,7 @@ void solve(){{
  {}
 }}
 
-int main(){{
+signed main(){{
     ios_base::sync_with_stdio(false);
     cin.tie(NULL);
     cout.tie(NULL);
@@ -214,11 +218,49 @@ int binarySearch(int tar, vi nums) {{
 
 ]], {}))
 
+local ncr = s('ncr', fmt([[
+int power(int x, int n) {{
+  if (n == 0)
+    return 1;
+
+  int ans = power(x, n / 2);
+  ans *= ans;
+  ans %= MOD;
+
+  if (n % 2 != 0) {{
+    ans *= x;
+    ans %= MOD;
+  }}
+
+  return ans;
+}}
+
+int fact(int n) {{
+  int ans = 1;
+
+  for (int i = 1; i <= n; i++) {{
+    ans *= i;
+    ans %= MOD;
+  }}
+
+  return ans;
+}}
+
+int nCr(int n, int r) {{
+  int ans = fact(n);
+  int denominator = (fact(n - r) * fact(r)) % MOD;
+
+  return (ans * power(denominator, MOD - 2)) % MOD;
+}}
+
+]], {}))
+
 table.insert(snippets, cppBoilerplate)
 table.insert(snippets, spf)
 table.insert(snippets, binexp)
 table.insert(snippets, dsu)
 table.insert(snippets, bfs)
 table.insert(snippets, bs)
+table.insert(snippets, ncr)
 
 return snippets, autosnippets

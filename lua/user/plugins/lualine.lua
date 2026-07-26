@@ -1,6 +1,7 @@
 local status_ok, lualine = pcall(require, "lualine")
 if not status_ok then
-	return
+  print("Lualine plugin not found!")
+  return
 end
 
 local colors = {
@@ -59,4 +60,3 @@ lualine.setup {
   },
   tabline = {},
 }
-
