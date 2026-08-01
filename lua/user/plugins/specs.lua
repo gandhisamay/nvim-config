@@ -344,7 +344,7 @@ return {
       {
         "<leader>r",
         toggle_project_runner,
-        mode = { "n", "t" },
+        mode = "n",
         desc = "Run Go project",
       },
     },
