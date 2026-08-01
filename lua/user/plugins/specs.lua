@@ -247,8 +247,34 @@ return {
 
   {
     "Pocco81/auto-save.nvim",
+    event = { "BufReadPost", "BufNewFile" },
     cmd = "ASToggle",
-    opts = {},
+    opts = {
+      enabled = true,
+      trigger_events = { "InsertLeave", "TextChanged", "FocusLost", "BufLeave" },
+      debounce_delay = 800,
+      execution_message = {
+        message = "",
+        dim = 0,
+        cleaning_interval = 0,
+      },
+      condition = function(buf)
+        return vim.api.nvim_buf_is_valid(buf)
+          and vim.bo[buf].modifiable
+          and not vim.bo[buf].readonly
+          and vim.bo[buf].buftype == ""
+          and vim.api.nvim_buf_get_name(buf) ~= ""
+      end,
+    },
+    config = function(_, opts)
+      local autosave = require("auto-save")
+      autosave.setup(opts)
+
+      -- The plugin enables itself before lazy.nvim applies user options.
+      -- Restart it once so the optimized event list above takes effect.
+      autosave.off()
+      autosave.on()
+    end,
   },
 
   {
