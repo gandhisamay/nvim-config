@@ -468,11 +468,12 @@ return {
 
   {
     "nvim-treesitter/nvim-treesitter",
-    branch = "master",
+    branch = "main",
     lazy = false,
     build = ":TSUpdate",
-    opts = {
-      ensure_installed = {
+    config = function()
+      local treesitter = require("nvim-treesitter")
+      local languages = {
         "bash",
         "go",
         "gomod",
@@ -485,20 +486,40 @@ return {
         "vim",
         "vimdoc",
         "yaml",
-      },
-      auto_install = false,
-      sync_install = false,
-      highlight = {
-        enable = true,
-        additional_vim_regex_highlighting = false,
-      },
-      indent = {
-        enable = true,
-        disable = { "yaml" },
-      },
-    },
-    config = function(_, opts)
-      require("nvim-treesitter.configs").setup(opts)
+      }
+
+      treesitter.setup({})
+
+      local installed = {}
+      for _, language in ipairs(treesitter.get_installed()) do
+        installed[language] = true
+      end
+
+      local missing = {}
+      for _, language in ipairs(languages) do
+        if not installed[language] then
+          missing[#missing + 1] = language
+        end
+      end
+      if #missing > 0 then
+        treesitter.install(missing)
+      end
+
+      local group = vim.api.nvim_create_augroup("user_treesitter", { clear = true })
+      vim.api.nvim_create_autocmd("FileType", {
+        group = group,
+        callback = function(args)
+          local language = vim.treesitter.language.get_lang(args.match) or args.match
+          if not vim.tbl_contains(languages, language) then
+            return
+          end
+
+          local started = pcall(vim.treesitter.start, args.buf, language)
+          if started and args.match ~= "yaml" then
+            vim.bo[args.buf].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+          end
+        end,
+      })
     end,
   },
 
