@@ -14,7 +14,7 @@ vim.api.nvim_create_autocmd("FileType", {
     vim.bo.expandtab = false
     vim.bo.shiftwidth = 0
     vim.bo.softtabstop = 0
-    vim.bo.tabstop = 8
+    vim.bo.tabstop = 4
   end,
 })
 
