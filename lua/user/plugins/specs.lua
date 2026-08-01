@@ -309,26 +309,32 @@ return {
       {
         "<leader>h",
         "<Cmd>ToggleTerm direction=horizontal<CR>",
-        mode = { "n", "t" },
+        mode = "n",
         desc = "Terminal",
       },
       {
         "<leader>m",
         "<Cmd>ToggleTerm direction=float<CR>",
-        mode = { "n", "t" },
+        mode = "n",
         desc = "Floating terminal",
       },
       {
         "<leader>tt",
         "<Cmd>ToggleTerm direction=horizontal<CR>",
-        mode = { "n", "t" },
+        mode = "n",
         desc = "Terminal",
       },
       {
         "<leader>tf",
         "<Cmd>ToggleTerm direction=float<CR>",
-        mode = { "n", "t" },
+        mode = "n",
         desc = "Floating terminal",
+      },
+      {
+        "<C-q>",
+        "<Cmd>ToggleTerm<CR>",
+        mode = "t",
+        desc = "Hide terminal",
       },
       {
         "<leader>g",
