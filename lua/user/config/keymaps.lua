@@ -33,6 +33,8 @@ map("n", "<C-Up>", "<Cmd>resize +2<CR>", { desc = "Increase window height" })
 map("n", "<C-Down>", "<Cmd>resize -2<CR>", { desc = "Decrease window height" })
 map("n", "<C-Left>", "<Cmd>vertical resize -2<CR>", { desc = "Decrease window width" })
 map("n", "<C-Right>", "<Cmd>vertical resize +2<CR>", { desc = "Increase window width" })
+map("t", "<C-Left>", "<Cmd>vertical resize -2<CR>", { desc = "Decrease terminal width" })
+map("t", "<C-Right>", "<Cmd>vertical resize +2<CR>", { desc = "Increase terminal width" })
 
 map("x", "<", "<gv", { desc = "Indent left" })
 map("x", ">", ">gv", { desc = "Indent right" })
