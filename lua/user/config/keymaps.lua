@@ -12,10 +12,17 @@ map("n", "<A-s>", "<Cmd>ASToggle<CR>", { desc = "Toggle autosave" })
 map("i", "jk", "<Esc>", { desc = "Exit insert mode" })
 map({ "n", "i", "x" }, "<C-s>", "<Cmd>write<CR>", { desc = "Save file" })
 
-map("n", "<C-h>", "<C-w>h", { desc = "Focus left window" })
-map("n", "<C-j>", "<C-w>j", { desc = "Focus lower window" })
-map("n", "<C-k>", "<C-w>k", { desc = "Focus upper window" })
-map("n", "<C-l>", "<C-w>l", { desc = "Focus right window" })
+local function focus_window(direction)
+  vim.cmd("wincmd " .. direction)
+  if vim.bo.buftype == "terminal" then
+    vim.cmd("startinsert")
+  end
+end
+
+map("n", "<C-h>", function() focus_window("h") end, { desc = "Focus left window" })
+map("n", "<C-j>", function() focus_window("j") end, { desc = "Focus lower window" })
+map("n", "<C-k>", function() focus_window("k") end, { desc = "Focus upper window" })
+map("n", "<C-l>", function() focus_window("l") end, { desc = "Focus right window" })
 map("t", "<C-h>", "<C-\\><C-n><C-w>h", { desc = "Focus left window" })
 map("t", "<C-j>", "<C-\\><C-n><C-w>j", { desc = "Focus lower window" })
 map("t", "<C-k>", "<C-\\><C-n><C-w>k", { desc = "Focus upper window" })

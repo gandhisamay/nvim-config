@@ -685,6 +685,11 @@ return {
         "<leader>ai",
         function()
           require("sidekick.cli").toggle({ name = "codex", focus = true })
+          vim.schedule(function()
+            if vim.bo.buftype == "terminal" then
+              vim.cmd("startinsert")
+            end
+          end)
         end,
         desc = "Toggle Codex",
       },
@@ -707,6 +712,11 @@ return {
         "<C-.>",
         function()
           require("sidekick.cli").focus({ name = "codex" })
+          vim.schedule(function()
+            if vim.bo.buftype == "terminal" then
+              vim.cmd("startinsert")
+            end
+          end)
         end,
         mode = { "n", "t", "i", "x" },
         desc = "Focus Codex",
