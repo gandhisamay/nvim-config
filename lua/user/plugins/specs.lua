@@ -8,6 +8,56 @@ local function project_root()
   return (buffer_path ~= "" and vim.fs.dirname(buffer_path)) or vim.uv.cwd()
 end
 
+local function parse_command_line_arguments(input)
+  local arguments = {}
+  local current = {}
+  local quote
+  local escaped = false
+  local token_started = false
+
+  for index = 1, #input do
+    local character = input:sub(index, index)
+
+    if escaped then
+      current[#current + 1] = character
+      escaped = false
+    elseif character == "\\" and quote ~= "'" then
+      escaped = true
+      token_started = true
+    elseif quote then
+      if character == quote then
+        quote = nil
+      else
+        current[#current + 1] = character
+      end
+    elseif character == '"' or character == "'" then
+      quote = character
+      token_started = true
+    elseif character:match("%s") then
+      if token_started then
+        arguments[#arguments + 1] = table.concat(current)
+        current = {}
+        token_started = false
+      end
+    else
+      current[#current + 1] = character
+      token_started = true
+    end
+  end
+
+  if escaped then
+    return nil, "Go arguments end with an unfinished escape"
+  end
+  if quote then
+    return nil, "Go arguments contain an unclosed " .. quote .. " quote"
+  end
+  if token_started then
+    arguments[#arguments + 1] = table.concat(current)
+  end
+
+  return arguments
+end
+
 local function find_project_files()
   require("fzf-lua").files({
     cwd = project_root(),
@@ -84,7 +134,12 @@ return {
     "folke/tokyonight.nvim",
     lazy = false,
     priority = 1000,
-    opts = { style = "night" },
+    opts = {
+      style = "night",
+      on_highlights = function(highlights)
+        highlights.Comment = { fg = "#4b5275", italic = true }
+      end,
+    },
     config = function(_, opts)
       require("tokyonight").setup(opts)
       vim.cmd.colorscheme("tokyonight-night")
@@ -92,6 +147,19 @@ return {
   },
 
   { "nvim-tree/nvim-web-devicons", lazy = true, opts = {} },
+
+  {
+    "MeanderingProgrammer/render-markdown.nvim",
+    ft = { "markdown" },
+    dependencies = {
+      "nvim-treesitter/nvim-treesitter",
+      "nvim-tree/nvim-web-devicons",
+    },
+    opts = {
+      html = { enabled = false },
+      latex = { enabled = false },
+    },
+  },
 
   {
     "nvim-lualine/lualine.nvim",
@@ -572,6 +640,34 @@ return {
         desc = "Toggle breakpoint",
       },
       {
+        "<leader>da",
+        function()
+          local root = project_root()
+
+          vim.ui.input({ prompt = "Go args: " }, function(input)
+            if input == nil then
+              return
+            end
+
+            local arguments, error_message = parse_command_line_arguments(input)
+            if not arguments then
+              vim.notify(error_message, vim.log.levels.ERROR)
+              return
+            end
+
+            require("dap").run({
+              type = "go",
+              request = "launch",
+              name = "Debug Go project",
+              program = root,
+              cwd = root,
+              args = arguments,
+            })
+          end)
+        end,
+        desc = "Debug Go project with arguments",
+      },
+      {
         "<leader>dt",
         function()
           require("dap-go").debug_test()
@@ -589,6 +685,20 @@ return {
     config = function()
       local dap = require("dap")
       local dapui = require("dapui")
+
+      vim.api.nvim_set_hl(0, "DapBreakpointSign", { fg = "#b22222", bold = true })
+      vim.fn.sign_define("DapBreakpoint", { text = "● ", texthl = "DapBreakpointSign" })
+      vim.fn.sign_define("DapBreakpointCondition", { text = "◆ ", texthl = "DapBreakpointSign" })
+      vim.fn.sign_define("DapBreakpointRejected", { text = "× ", texthl = "DapBreakpointSign" })
+
+      vim.api.nvim_set_hl(0, "DapStoppedSign", { fg = "#b66a2c", bold = true })
+      vim.api.nvim_set_hl(0, "DapStoppedLine", { bg = "#27364d" })
+      vim.fn.sign_define("DapStopped", {
+        text = "▶ ",
+        texthl = "DapStoppedSign",
+        linehl = "DapStoppedLine",
+        numhl = "DapStoppedSign",
+      })
 
       dapui.setup()
 
