@@ -138,6 +138,13 @@ return {
       style = "night",
       on_highlights = function(highlights)
         highlights.Comment = { fg = "#4b5275", italic = true }
+        highlights.NeoTreeGitAdded = { fg = "#9ece6a" }
+        highlights.NeoTreeGitConflict = { fg = "#f7768e" }
+        highlights.NeoTreeGitDeleted = { fg = "#f7768e" }
+        highlights.NeoTreeGitIgnored = { fg = "#565f89" }
+        highlights.NeoTreeGitModified = { fg = "#e0af68" }
+        highlights.NeoTreeGitRenamed = { fg = "#7dcfff" }
+        highlights.NeoTreeGitUntracked = { fg = "#9ece6a" }
       end,
     },
     config = function(_, opts)
@@ -193,7 +200,7 @@ return {
     event = "VimEnter",
     cond = function()
       -- The dashboard is useful only for a truly empty launch. A directory
-      -- argument is handled by NvimTree instead.
+      -- argument is handled by Neo-tree instead.
       return vim.fn.argc() == 0
     end,
     dependencies = { "nvim-tree/nvim-web-devicons" },
@@ -219,47 +226,46 @@ return {
   },
 
   {
-    "nvim-tree/nvim-tree.lua",
-    cmd = { "NvimTreeToggle", "NvimTreeFindFile" },
+    "nvim-neo-tree/neo-tree.nvim",
+    branch = "v3.x",
+    lazy = false,
     keys = {
-      { "<leader>y", "<Cmd>NvimTreeToggle<CR>", desc = "File explorer" },
+      { "<leader>y", "<Cmd>Neotree toggle reveal position=right<CR>", desc = "File explorer" },
+      { "<leader>yg", "<Cmd>Neotree toggle git_status position=right<CR>", desc = "Git explorer" },
     },
-    init = function()
-      local group = vim.api.nvim_create_augroup("user_directory_explorer", { clear = true })
-      vim.api.nvim_create_autocmd("VimEnter", {
-        group = group,
-        once = true,
-        callback = function()
-          if vim.fn.argc() ~= 1 then
-            return
-          end
-
-          local argument = vim.fn.argv(0)
-          if vim.fn.isdirectory(argument) ~= 1 then
-            return
-          end
-
-          local directory = vim.fs.normalize(vim.fn.fnamemodify(argument, ":p"))
-          vim.cmd.cd(vim.fn.fnameescape(directory))
-          require("lazy").load({ plugins = { "nvim-tree.lua" } })
-          require("nvim-tree.api").tree.open({ path = directory })
-        end,
-      })
-    end,
-    dependencies = { "nvim-tree/nvim-web-devicons" },
+    dependencies = {
+      "nvim-lua/plenary.nvim",
+      "MunifTanjim/nui.nvim",
+      "nvim-tree/nvim-web-devicons",
+    },
     opts = {
-      disable_netrw = true,
-      hijack_netrw = true,
-      sync_root_with_cwd = true,
-      respect_buf_cwd = true,
-      update_focused_file = { enable = true },
-      diagnostics = { enable = true },
-      git = { enable = true, ignore = false, timeout = 400 },
-      view = { side = "right", width = 36 },
-      renderer = {
-        group_empty = true,
-        highlight_git = true,
-        indent_markers = { enable = true },
+      enable_diagnostics = true,
+      enable_git_status = true,
+      default_component_configs = {
+        name = { use_git_status_colors = true },
+        git_status = {
+          symbols = {
+            added = "A",
+            modified = "M",
+            deleted = "D",
+            renamed = "R",
+            untracked = "U",
+            ignored = "I",
+            unstaged = "",
+            staged = "",
+            conflict = "C",
+          },
+        },
+      },
+      filesystem = {
+        bind_to_cwd = true,
+        follow_current_file = { enabled = true },
+        hijack_netrw_behavior = "open_default",
+        use_libuv_file_watcher = true,
+      },
+      window = {
+        position = "right",
+        width = 36,
       },
     },
   },
