@@ -1,9 +1,8 @@
 local opt = vim.opt
 
 -- Neovim may be launched from a terminal that predates the latest .bashrc.
--- Keep Ubuntu-local editor and Go tools available in that case as well.
+-- Keep Ubuntu-local editor tools available in that case as well.
 local local_paths = {
-  vim.fn.expand("~/go/bin"),
   vim.fn.expand("~/.local/bin"),
   vim.fn.expand("~/.local/nvim/bin"),
 }

@@ -7,21 +7,7 @@ vim.api.nvim_create_autocmd("TextYankPost", {
   end,
 })
 
-vim.api.nvim_create_autocmd("FileType", {
-  group = group,
-  pattern = "go",
-  callback = function()
-    vim.bo.expandtab = false
-    vim.bo.shiftwidth = 0
-    vim.bo.softtabstop = 0
-    vim.bo.tabstop = 4
-  end,
-})
-
 vim.filetype.add({
-  extension = {
-    gotmpl = "gotmpl",
-  },
   filename = {
     [vim.fn.expand("~/.config/i3/config")] = "i3config",
     [vim.fn.expand("~/.config/sway/config")] = "i3config",

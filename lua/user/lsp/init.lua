@@ -16,35 +16,8 @@ vim.diagnostic.config({
   },
 })
 
-vim.lsp.config("gopls", {
-  cmd = { vim.fn.expand("~/go/bin/gopls") },
-  capabilities = capabilities,
-  settings = {
-    gopls = {
-      completeFunctionCalls = true,
-      gofumpt = true,
-      staticcheck = true,
-      usePlaceholders = true,
-      analyses = {
-        nilness = true,
-        shadow = true,
-        unusedparams = true,
-        unusedwrite = true,
-      },
-      hints = {
-        assignVariableTypes = true,
-        compositeLiteralFields = true,
-        compositeLiteralTypes = true,
-        constantValues = true,
-        functionTypeParameters = true,
-        parameterNames = true,
-        rangeVariableTypes = true,
-      },
-    },
-  },
-})
-
-vim.lsp.enable("gopls")
+-- Servers are registered by language modules through nvim-lspconfig opts.
+vim.lsp.config("*", { capabilities = capabilities })
 
 local group = vim.api.nvim_create_augroup("user_lsp", { clear = true })
 vim.api.nvim_create_autocmd("LspAttach", {

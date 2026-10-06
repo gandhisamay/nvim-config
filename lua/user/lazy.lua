@@ -16,7 +16,27 @@ end
 
 vim.opt.rtp:prepend(lazypath)
 
-require("lazy").setup("user.plugins.specs", {
+-- Each language branch adds lua/user/lang/<language>.lua. The base branch has
+-- none. Languages also get their own lockfile, so merging the base branch into
+-- a language branch never conflicts on pinned plugin commits.
+local config_dir = vim.fn.stdpath("config")
+local languages = {}
+for name, type in vim.fs.dir(config_dir .. "/lua/user/lang") do
+  if type == "file" and name:sub(-4) == ".lua" then
+    languages[#languages + 1] = name:sub(1, -5)
+  end
+end
+table.sort(languages)
+
+local spec = { { import = "user.plugins.specs" } }
+local lockfile = config_dir .. "/lazy-lock.json"
+if #languages > 0 then
+  spec[#spec + 1] = { import = "user.lang" }
+  lockfile = config_dir .. "/lazy-lock-" .. table.concat(languages, "-") .. ".json"
+end
+
+require("lazy").setup(spec, {
+  lockfile = lockfile,
   checker = { enabled = false },
   change_detection = { notify = false },
   install = { colorscheme = { "tokyonight", "habamax" } },

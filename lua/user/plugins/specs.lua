@@ -1,66 +1,8 @@
-local function project_root()
-  local root = vim.fs.root(0, { "go.work", "go.mod", ".git" })
-  if root then
-    return root
-  end
-
-  local buffer_path = vim.api.nvim_buf_get_name(0)
-  return (buffer_path ~= "" and vim.fs.dirname(buffer_path)) or vim.uv.cwd()
-end
-
-local function parse_command_line_arguments(input)
-  local arguments = {}
-  local current = {}
-  local quote
-  local escaped = false
-  local token_started = false
-
-  for index = 1, #input do
-    local character = input:sub(index, index)
-
-    if escaped then
-      current[#current + 1] = character
-      escaped = false
-    elseif character == "\\" and quote ~= "'" then
-      escaped = true
-      token_started = true
-    elseif quote then
-      if character == quote then
-        quote = nil
-      else
-        current[#current + 1] = character
-      end
-    elseif character == '"' or character == "'" then
-      quote = character
-      token_started = true
-    elseif character:match("%s") then
-      if token_started then
-        arguments[#arguments + 1] = table.concat(current)
-        current = {}
-        token_started = false
-      end
-    else
-      current[#current + 1] = character
-      token_started = true
-    end
-  end
-
-  if escaped then
-    return nil, "Go arguments end with an unfinished escape"
-  end
-  if quote then
-    return nil, "Go arguments contain an unclosed " .. quote .. " quote"
-  end
-  if token_started then
-    arguments[#arguments + 1] = table.concat(current)
-  end
-
-  return arguments
-end
+local util = require("user.util")
 
 local function find_project_files()
   require("fzf-lua").files({
-    cwd = project_root(),
+    cwd = util.project_root(),
     -- Avoid FzfLua probing for missing fd/fdfind executables. On WSL that
     -- probe scans the Windows-heavy PATH and adds roughly 200 ms per picker.
     cmd = [[rg --color=never --files --hidden -g "!.git" -g "!.jj"]],
@@ -68,7 +10,7 @@ local function find_project_files()
 end
 
 local function grep_project()
-  require("fzf-lua").live_grep({ cwd = project_root() })
+  require("fzf-lua").live_grep({ cwd = util.project_root() })
 end
 
 local lazygit_terminal
@@ -89,44 +31,6 @@ local function toggle_lazygit()
   end
 
   lazygit_terminal:toggle()
-end
-
-local project_terminals = {}
-local function toggle_project_runner()
-  -- When invoked from the runner itself, the project buffer is no longer
-  -- current, so close the focused runner before trying to detect a root.
-  for _, terminal in pairs(project_terminals) do
-    if terminal:is_focused() then
-      terminal:close()
-      return
-    end
-  end
-
-  local root = project_root()
-  local terminal = project_terminals[root]
-
-  -- Keep completed output visible. The next invocation replaces the finished
-  -- terminal and starts a fresh run.
-  if terminal and terminal.job_id and vim.fn.jobwait({ terminal.job_id }, 0)[1] ~= -1 then
-    terminal:shutdown()
-    project_terminals[root] = nil
-    terminal = nil
-  end
-
-  if not terminal then
-    terminal = require("toggleterm.terminal").Terminal:new({
-      cmd = "go run .",
-      dir = root,
-      direction = "horizontal",
-      size = 15,
-      hidden = true,
-      close_on_exit = false,
-      display_name = "Go: " .. vim.fs.basename(root),
-    })
-    project_terminals[root] = terminal
-  end
-
-  terminal:toggle(15)
 end
 
 return {
@@ -426,12 +330,6 @@ return {
         toggle_lazygit,
         desc = "LazyGit",
       },
-      {
-        "<leader>r",
-        toggle_project_runner,
-        mode = "n",
-        desc = "Run Go project",
-      },
     },
     opts = {
       direction = "horizontal",
@@ -526,8 +424,14 @@ return {
     "neovim/nvim-lspconfig",
     event = { "BufReadPre", "BufNewFile" },
     dependencies = { "hrsh7th/cmp-nvim-lsp" },
-    config = function()
+    -- Language modules add servers here: opts = { servers = { name = config } }.
+    opts = { servers = {} },
+    config = function(_, opts)
       require("user.lsp")
+      for name, server in pairs(opts.servers) do
+        vim.lsp.config(name, server)
+        vim.lsp.enable(name)
+      end
     end,
   },
 
@@ -544,10 +448,9 @@ return {
         desc = "Format buffer",
       },
     },
+    -- Language modules add their formatters to formatters_by_ft.
     opts = {
-      formatters_by_ft = {
-        go = { "goimports", "gofumpt" },
-      },
+      formatters_by_ft = {},
     },
   },
 
@@ -556,14 +459,13 @@ return {
     branch = "main",
     lazy = false,
     build = ":TSUpdate",
-    config = function()
-      local treesitter = require("nvim-treesitter")
-      local languages = {
+    -- Language modules append parsers with opts = { languages = { ... } }.
+    -- Only listed languages get parsers and Treesitter highlighting.
+    opts_extend = { "languages" },
+    opts = {
+      -- Files found in almost every repository, whatever its language.
+      languages = {
         "bash",
-        "go",
-        "gomod",
-        "gosum",
-        "gowork",
         "json",
         "lua",
         "markdown",
@@ -571,7 +473,11 @@ return {
         "vim",
         "vimdoc",
         "yaml",
-      }
+      },
+    },
+    config = function(_, opts)
+      local treesitter = require("nvim-treesitter")
+      local languages = opts.languages
 
       treesitter.setup({})
 
@@ -615,10 +521,6 @@ return {
         "rcarriga/nvim-dap-ui",
         dependencies = { "nvim-neotest/nvim-nio" },
       },
-      {
-        "leoluz/nvim-dap-go",
-        opts = {},
-      },
     },
     keys = {
       {
@@ -655,41 +557,6 @@ return {
           require("dap").toggle_breakpoint()
         end,
         desc = "Toggle breakpoint",
-      },
-      {
-        "<leader>da",
-        function()
-          local root = project_root()
-
-          vim.ui.input({ prompt = "Go args: " }, function(input)
-            if input == nil then
-              return
-            end
-
-            local arguments, error_message = parse_command_line_arguments(input)
-            if not arguments then
-              vim.notify(error_message, vim.log.levels.ERROR)
-              return
-            end
-
-            require("dap").run({
-              type = "go",
-              request = "launch",
-              name = "Debug Go project",
-              program = root,
-              cwd = root,
-              args = arguments,
-            })
-          end)
-        end,
-        desc = "Debug Go project with arguments",
-      },
-      {
-        "<leader>dt",
-        function()
-          require("dap-go").debug_test()
-        end,
-        desc = "Debug Go test",
       },
       {
         "<leader>du",
@@ -732,78 +599,6 @@ return {
         dapui.close()
       end
     end,
-  },
-
-  {
-    "nvim-neotest/neotest",
-    dependencies = {
-      "nvim-neotest/nvim-nio",
-      "nvim-lua/plenary.nvim",
-      "antoinemadec/FixCursorHold.nvim",
-      "nvim-treesitter/nvim-treesitter",
-      "nvim-neotest/neotest-go",
-    },
-    keys = {
-      {
-        "<leader>tn",
-        function()
-          require("neotest").run.run()
-        end,
-        desc = "Run nearest test",
-      },
-      {
-        "<leader>tF",
-        function()
-          require("neotest").run.run(vim.fn.expand("%"))
-        end,
-        desc = "Run test file",
-      },
-      {
-        "<leader>ts",
-        function()
-          require("neotest").summary.toggle()
-        end,
-        desc = "Test summary",
-      },
-      {
-        "<leader>to",
-        function()
-          require("neotest").output.open({ enter = true })
-        end,
-        desc = "Test output",
-      },
-    },
-    init = function()
-      -- neotest-go still calls the removed-in-future compatibility helper.
-      -- Keep its behavior without emitting a deprecation warning on Nvim 0.12.
-      if vim.fn.has("nvim-0.12") == 1 then
-        vim.tbl_flatten = function(value)
-          return vim.iter(value):flatten(math.huge):totable()
-        end
-      end
-    end,
-    config = function()
-      require("neotest").setup({
-        adapters = {
-          require("neotest-go")({
-            experimental = { test_table = true },
-            args = { "-count=1", "-timeout=60s" },
-          }),
-        },
-      })
-    end,
-  },
-
-  {
-    "akinsho/flutter-tools.nvim",
-    ft = "dart",
-    dependencies = { "nvim-lua/plenary.nvim" },
-    opts = {},
-  },
-
-  {
-    "mfussenegger/nvim-jdtls",
-    ft = "java",
   },
 
   {
