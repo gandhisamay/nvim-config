@@ -19,7 +19,7 @@ So this repo keeps languages apart:
 | Branch | What it adds |
 |---|---|
 | `lua_config` | General base. No language tooling. |
-| `java` | Java / Spring Boot: jdtls (with Lombok), Java debugging and tests, Maven runner, parsers for java, xml, properties. |
+| `java` | Java / Spring Boot: jdtls (with Lombok), Java debugging and tests, Maven runner, parsers for java, xml, properties. Run `scripts/install-java-tools.sh` once per machine. |
 | `go` | Go: gopls, gofumpt / goimports, delve debugging, neotest-go, `go run` runner, Go parsers. |
 
 The old `vim_script` branch is the previous Vimscript config and isn't part of this scheme.
