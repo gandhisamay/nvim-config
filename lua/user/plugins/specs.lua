@@ -262,6 +262,17 @@ return {
         follow_current_file = { enabled = true },
         hijack_netrw_behavior = "open_default",
         use_libuv_file_watcher = true,
+        filtered_items = {
+          visible = true,
+          hide_dotfiles = false,
+          hide_gitignored = false,
+          hide_ignored = false,
+          hide_hidden = false,
+          hide_by_name = {},
+          hide_by_pattern = {},
+          never_show = {},
+          never_show_by_pattern = {},
+        },
       },
       window = {
         position = "right",
