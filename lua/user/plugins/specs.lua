@@ -209,6 +209,15 @@ return {
   {
     "lewis6991/gitsigns.nvim",
     event = { "BufReadPre", "BufNewFile" },
+    keys = {
+      {
+        "<leader>df",
+        function()
+          require("gitsigns").preview_hunk()
+        end,
+        desc = "Preview changed hunk (old code)",
+      },
+    },
     opts = {
       signs = {
         add = { text = "▎" },
@@ -679,19 +688,5 @@ return {
         { path = "~/vimwiki", syntax = "markdown", ext = ".md" },
       }
     end,
-  },
-
-  {
-    "xeluxee/competitest.nvim",
-    cmd = "CompetiTest",
-    keys = {
-      { "<leader>b", "<Cmd>CompetiTest run<CR>", desc = "Run competitive tests" },
-      { "<leader>bn", "<Cmd>CompetiTest run_no_compile<CR>", desc = "Run without compiling" },
-      { "<leader>e", "<Cmd>CompetiTest edit_testcase<CR>", desc = "Edit testcase" },
-      { "<leader>d", "<Cmd>CompetiTest delete_testcase<CR>", desc = "Delete testcase" },
-      { "<leader>pr", "<Cmd>CompetiTest receive problem<CR>", desc = "Receive problem" },
-    },
-    dependencies = { "MunifTanjim/nui.nvim" },
-    opts = {},
   },
 }
