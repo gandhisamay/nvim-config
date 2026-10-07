@@ -604,7 +604,7 @@ return {
   {
     "folke/sidekick.nvim",
     opts = {
-      -- Use Sidekick as a Codex CLI host only. Copilot NES can be enabled
+      -- Use Sidekick as a Claude Code CLI host only. Copilot NES can be enabled
       -- separately later without changing this terminal workflow.
       nes = { enabled = false },
       copilot = {
@@ -616,10 +616,14 @@ return {
           layout = "right",
           split = { width = 80 },
         },
-        mux = {
+        -- Persist sessions through tmux when it is installed; otherwise fall
+        -- back to Neovim's built-in terminal.
+        mux = vim.fn.executable("tmux") == 1 and {
           enabled = true,
           backend = "tmux",
           create = "terminal",
+        } or {
+          enabled = false,
         },
       },
     },
@@ -627,21 +631,21 @@ return {
       {
         "<leader>ai",
         function()
-          require("sidekick.cli").toggle({ name = "codex", focus = true })
+          require("sidekick.cli").toggle({ name = "claude", focus = true })
           vim.schedule(function()
             if vim.bo.buftype == "terminal" then
               vim.cmd("startinsert")
             end
           end)
         end,
-        desc = "Toggle Codex",
+        desc = "Toggle Claude Code",
       },
       {
         "<leader>xf",
         function()
           require("sidekick.cli").send({ msg = "{file}" })
         end,
-        desc = "Send file to Codex",
+        desc = "Send file to Claude Code",
       },
       {
         "<leader>xv",
@@ -649,12 +653,12 @@ return {
           require("sidekick.cli").send({ msg = "{selection}" })
         end,
         mode = "x",
-        desc = "Send selection to Codex",
+        desc = "Send selection to Claude Code",
       },
       {
         "<C-.>",
         function()
-          require("sidekick.cli").focus({ name = "codex" })
+          require("sidekick.cli").focus({ name = "claude" })
           vim.schedule(function()
             if vim.bo.buftype == "terminal" then
               vim.cmd("startinsert")
@@ -662,7 +666,7 @@ return {
           end)
         end,
         mode = { "n", "t", "i", "x" },
-        desc = "Focus Codex",
+        desc = "Focus Claude Code",
       },
     },
   },
