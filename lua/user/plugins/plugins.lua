@@ -126,14 +126,6 @@ return packer.startup(function(use)
   use "jose-elias-alvarez/null-ls.nvim"
   -- use 'notjedi/nvim-rooter.lua'
 
-  use {
-    'xeluxee/competitest.nvim',
-    requires = 'MunifTanjim/nui.nvim',
-    config = function()
-      require 'competitest'.setup({})
-    end,
-  }
-
   use 'Pocco81/auto-save.nvim'
   use({
       "kylechui/nvim-surround",
