@@ -217,6 +217,20 @@ return {
         end,
         desc = "Preview changed hunk (old code)",
       },
+      {
+        "<leader>dr",
+        function()
+          require("gitsigns").reset_hunk()
+        end,
+        desc = "Reset hunk (revert to committed code)",
+      },
+      {
+        "<leader>dR",
+        function()
+          require("gitsigns").reset_buffer()
+        end,
+        desc = "Reset buffer (revert all changes)",
+      },
     },
     opts = {
       signs = {
