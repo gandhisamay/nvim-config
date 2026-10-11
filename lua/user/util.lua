@@ -1,11 +1,13 @@
+local profile = require("user.profile")
+
 local M = {}
 
--- Groups of root markers, highest priority first (see :h vim.fs.root()).
--- Language modules in lua/user/lang/ may prepend their own markers.
-M.root_markers = { ".git" }
-
+-- The current buffer's project: its language's root markers (see
+-- user.profile), or the git root.
 function M.project_root()
-  local root = vim.fs.root(0, M.root_markers)
+  local language = profile.owner(0)
+  local markers = language and profile.languages[language].root_markers or { ".git" }
+  local root = vim.fs.root(0, markers)
   if root then
     return root
   end
@@ -16,16 +18,24 @@ end
 
 local runners = {}
 
+-- Close the runner terminal if it is the focused window.
+function M.close_focused_runner()
+  for _, terminal in pairs(runners) do
+    if terminal:is_focused() then
+      terminal:close()
+      return true
+    end
+  end
+  return false
+end
+
 -- Toggle a terminal that runs `cmd` in `root`. Completed output stays visible;
 -- the next invocation after the command exits starts a fresh run.
 function M.toggle_runner(cmd, root, name)
   -- When invoked from the runner itself, the project buffer is no longer
   -- current, so close the focused runner before trying to detect a root.
-  for _, terminal in pairs(runners) do
-    if terminal:is_focused() then
-      terminal:close()
-      return
-    end
+  if M.close_focused_runner() then
+    return
   end
 
   local key = root .. "\0" .. cmd
