@@ -186,6 +186,92 @@ return {
   },
 
   {
+    "folke/persistence.nvim",
+    -- Loaded at startup so the session of the working directory can be
+    -- restored on VimEnter. It saves one session per directory and branch.
+    lazy = false,
+    keys = {
+      { "<leader>qs", function() require("persistence").load() end, desc = "Restore session" },
+      { "<leader>ql", function() require("persistence").load({ last = true }) end, desc = "Restore last session" },
+      { "<leader>qS", function() require("persistence").select() end, desc = "Select session" },
+      { "<leader>qd", function() require("persistence").stop() end, desc = "Don't save this session" },
+    },
+    config = function(_, opts)
+      -- Terminals, folds and empty windows don't restore usefully.
+      vim.opt.sessionoptions = { "buffers", "curdir", "tabpages", "winsize" }
+
+      local persistence = require("persistence")
+      persistence.setup(opts)
+
+      local group = vim.api.nvim_create_augroup("user_session", { clear = true })
+
+      -- Neo-tree windows come back as empty buffers, so close them first.
+      vim.api.nvim_create_autocmd("User", {
+        group = group,
+        pattern = "PersistenceSavePre",
+        callback = function()
+          pcall(vim.cmd, "Neotree close")
+        end,
+      })
+
+      -- Restore when Neovim is started on a directory (`nvim` or `nvim .`),
+      -- never when files or stdin were given.
+      vim.api.nvim_create_autocmd("VimEnter", {
+        group = group,
+        nested = true,
+        callback = function()
+          if vim.g.started_with_stdin then
+            return
+          end
+          local argc = vim.fn.argc()
+          local dir = argc == 1 and vim.fn.argv(0) or nil
+          if argc > 1 or (dir and vim.fn.isdirectory(dir) == 0) then
+            return
+          end
+          if dir then
+            vim.cmd.cd(vim.fn.fnameescape(dir))
+          end
+          if vim.fn.filereadable(persistence.current()) == 0
+            and vim.fn.filereadable(persistence.current({ branch = false })) == 0
+          then
+            return
+          end
+          -- Run after the dashboard / Neo-tree startup handlers so the
+          -- session replaces whatever they opened.
+          vim.schedule(function()
+            pcall(vim.cmd, "Neotree close")
+            -- Neo-tree hijacks the directory window on a short debounce and
+            -- focuses the tree. Closing that window makes it skip the hijack;
+            -- the tree is reopened below without taking focus.
+            vim.cmd("silent! new | silent! only")
+            vim.bo.bufhidden = "wipe"
+            -- Drop the directory buffer and the empty startup buffer.
+            local current = vim.api.nvim_get_current_buf()
+            for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+              local name = vim.api.nvim_buf_get_name(buf)
+              local empty = name == "" and buf ~= current and not vim.bo[buf].modified
+              if empty or vim.fn.isdirectory(name) == 1 then
+                pcall(vim.api.nvim_buf_delete, buf, { force = true })
+              end
+            end
+            persistence.load()
+            if dir then
+              pcall(vim.cmd, "Neotree show")
+            end
+          end)
+        end,
+      })
+
+      vim.api.nvim_create_autocmd("StdinReadPre", {
+        group = group,
+        callback = function()
+          vim.g.started_with_stdin = true
+        end,
+      })
+    end,
+  },
+
+  {
     "ibhagwan/fzf-lua",
     cmd = "FzfLua",
     dependencies = { "nvim-tree/nvim-web-devicons" },
