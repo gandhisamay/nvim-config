@@ -285,6 +285,14 @@ return {
       { "<leader>fh", "<Cmd>FzfLua helptags<CR>", desc = "Help tags" },
       { "<leader>fr", "<Cmd>FzfLua oldfiles<CR>", desc = "Recent files" },
       { "<leader>fs", "<Cmd>FzfLua lsp_document_symbols<CR>", desc = "Document symbols" },
+      { "<leader>/", "<Cmd>FzfLua blines<CR>", desc = "Search current file" },
+      {
+        "<leader>*",
+        function()
+          require("fzf-lua").blines({ query = vim.fn.expand("<cword>") })
+        end,
+        desc = "Search word under cursor in file",
+      },
     },
     opts = {
       fzf_opts = { ["--layout"] = "reverse-list" },
