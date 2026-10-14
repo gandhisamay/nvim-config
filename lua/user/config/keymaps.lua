@@ -58,3 +58,8 @@ map("n", "<A-j>", "<Cmd>%!jq<CR>", { desc = "Format JSON with jq" })
 map("n", "<leader>w", "<Cmd>!mysql -u root < %<CR>", { desc = "Run file in MySQL" })
 
 map("n", "<Esc>", "<Cmd>nohlsearch<CR>", { desc = "Clear search highlight" })
+
+map("n", "<leader>/", function() require("user.find").open() end, { desc = "Find in file" })
+map("n", "<leader>*", function()
+  require("user.find").open(vim.fn.expand("<cword>"))
+end, { desc = "Find word under cursor in file" })

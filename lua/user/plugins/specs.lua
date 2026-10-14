@@ -285,14 +285,6 @@ return {
       { "<leader>fh", "<Cmd>FzfLua helptags<CR>", desc = "Help tags" },
       { "<leader>fr", "<Cmd>FzfLua oldfiles<CR>", desc = "Recent files" },
       { "<leader>fs", "<Cmd>FzfLua lsp_document_symbols<CR>", desc = "Document symbols" },
-      { "<leader>/", "<Cmd>FzfLua blines<CR>", desc = "Search current file" },
-      {
-        "<leader>*",
-        function()
-          require("fzf-lua").blines({ query = vim.fn.expand("<cword>") })
-        end,
-        desc = "Search word under cursor in file",
-      },
     },
     opts = {
       fzf_opts = { ["--layout"] = "reverse-list" },
@@ -342,7 +334,9 @@ return {
   {
     "windwp/nvim-autopairs",
     event = "InsertEnter",
-    opts = {},
+    opts = {
+      disable_filetype = { "TelescopePrompt", "spectre_panel", "snacks_picker_input", "findbox" },
+    },
   },
 
   {
@@ -496,6 +490,13 @@ return {
       local luasnip = require("luasnip")
 
       cmp.setup({
+        -- Same as the default, plus `vim.b.completion = false` to opt a buffer out.
+        enabled = function()
+          return vim.b.completion ~= false
+            and vim.bo.buftype ~= "prompt"
+            and vim.fn.reg_recording() == ""
+            and vim.fn.reg_executing() == ""
+        end,
         snippet = {
           expand = function(args)
             luasnip.lsp_expand(args.body)
