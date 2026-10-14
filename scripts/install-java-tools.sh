@@ -5,6 +5,8 @@
 #   lombok.jar     Lombok agent, so jdtls understands @Getter, @Builder, ...
 #   java-debug/    java-debug bundle (debugging through nvim-dap)
 #   java-test/     vscode-java-test bundles (run/debug JUnit tests)
+#   spring-boot/   Spring Boot language server and its jdtls bundles
+#                  (application.yml / .properties completion, beans, endpoints)
 # Re-run it to update everything. Needs curl, tar, unzip and python3.
 set -euo pipefail
 
@@ -48,5 +50,15 @@ install_vsix_jars vscode-java-debug java-debug
 
 echo "==> java-test"
 install_vsix_jars vscode-java-test java-test
+
+echo "==> spring-boot"
+SB_URL="$(curl -fsSL https://open-vsx.org/api/vmware/vscode-spring-boot/latest \
+  | python3 -I -c 'import json, sys; d = json.load(sys.stdin); print(d["files"]["download"])')"
+curl -fsSL -o "$WORK/vscode-spring-boot.vsix" "$SB_URL"
+mkdir -p "$WORK/vscode-spring-boot"
+unzip -q "$WORK/vscode-spring-boot.vsix" 'extension/language-server/*' 'extension/jars/*' -d "$WORK/vscode-spring-boot"
+rm -rf "$TOOLS/spring-boot"
+mv "$WORK/vscode-spring-boot/extension" "$TOOLS/spring-boot"
+echo "    $(basename "$SB_URL")"
 
 echo "Installed into $TOOLS"

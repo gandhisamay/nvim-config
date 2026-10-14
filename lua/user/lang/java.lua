@@ -1,7 +1,7 @@
 -- Java / Spring Boot support. Loaded when user.profile finds Java in the project.
 -- Requires: a JDK 21+ to run jdtls (other installed JDKs are registered as project
 -- runtimes), Maven or a Maven wrapper, and the tools from scripts/install-java-tools.sh
--- (jdtls, Lombok, java-debug and java-test bundles).
+-- (jdtls, Lombok, java-debug and java-test bundles, Spring Boot language server).
 
 local profile = require("user.profile")
 local util = require("user.util")
@@ -68,6 +68,25 @@ local function runtimes()
   return result
 end
 
+-- The Spring Boot language server (spring-boot.nvim) and the jars it loads into
+-- jdtls, the same list as the VS Code extension's `javaExtensions`. The rest of
+-- spring-boot/jars/ belongs to other language servers.
+local spring_boot_ls = vim.fn.glob(tools .. "/spring-boot/language-server/spring-boot-language-server-*.jar", true, true)[1]
+local spring_boot_jars = vim.tbl_filter(
+  function(jar)
+    return vim.uv.fs_stat(jar) ~= nil
+  end,
+  vim.tbl_map(function(name)
+    return tools .. "/spring-boot/jars/" .. name
+  end, {
+    "io.projectreactor.reactor-core.jar",
+    "org.reactivestreams.reactive-streams.jar",
+    "jdt-ls-commons.jar",
+    "jdt-ls-extension.jar",
+    "sts-gradle-tooling.jar",
+  })
+)
+
 local function bundles()
   local jars = vim.fn.glob(tools .. "/java-debug/*.jar", true, true)
   for _, jar in ipairs(vim.fn.glob(tools .. "/java-test/*.jar", true, true)) do
@@ -76,6 +95,9 @@ local function bundles()
     if name ~= "com.microsoft.java.test.runner-jar-with-dependencies.jar" and name ~= "jacocoagent.jar" then
       jars[#jars + 1] = jar
     end
+  end
+  if spring_boot_ls then
+    vim.list_extend(jars, spring_boot_jars)
   end
   return jars
 end
@@ -280,11 +302,46 @@ end
 -- Java-only plugins are always declared so they stay installed and pinned in
 -- the lockfile; `cond` keeps them from loading when Java isn't active.
 local plugins = {
+  -- Spring Boot language server: application.yml / .properties completion and
+  -- validation, and bean / request mapping symbols. It learns the classpath
+  -- from jdtls, so it is a dependency of nvim-jdtls: its commands have to be
+  -- registered before jdtls imports the project.
+  {
+    "JavaHello/spring-boot.nvim",
+    cond = active and spring_boot_ls ~= nil,
+    ft = { "java", "yaml", "jproperties" },
+    opts = function()
+      return {
+        ls_path = spring_boot_ls,
+        jars = spring_boot_jars,
+        java_cmd = jdtls_java(), -- needs Java 21+
+        -- A separate JVM; don't start it in plain Java projects.
+        project_filter = function(root)
+          return require("spring_boot.util").has_spring_boot_dependency(root)
+        end,
+        server = {
+          settings = {
+            ["spring-boot"] = {
+              ls = {
+                -- Every custom @Value key has no metadata and is "unknown";
+                -- as warnings they bury the real problems (deprecated keys,
+                -- wrong types, duplicates).
+                problem = {
+                  ["application-properties"] = { PROP_UNKNOWN_PROPERTY = "HINT" },
+                  ["application-yaml"] = { YAML_UNKNOWN_PROPERTY = "HINT" },
+                },
+              },
+            },
+          },
+        },
+      }
+    end,
+  },
   {
     "mfussenegger/nvim-jdtls",
     cond = active,
     ft = "java",
-    dependencies = { "hrsh7th/cmp-nvim-lsp" },
+    dependencies = { "hrsh7th/cmp-nvim-lsp", "JavaHello/spring-boot.nvim" },
     config = function()
       vim.api.nvim_create_autocmd("FileType", {
         group = vim.api.nvim_create_augroup("user_java", { clear = true }),
@@ -313,6 +370,12 @@ vim.api.nvim_create_autocmd("VimEnter", {
 
 -- Acts in Java buffers, and in files of a Java build (pom.xml, application.yml, ...).
 profile.map("java", "n", "<leader>r", run_spring_boot, "Run Spring Boot app")
+profile.map("java", "n", "<leader>fe", function()
+  vim.cmd.SpringBoot("RequestMappings")
+end, "Find Spring endpoints")
+profile.map("java", "n", "<leader>fB", function()
+  vim.cmd.SpringBoot("Beans")
+end, "Find Spring beans")
 
 return vim.list_extend(plugins, {
   {
