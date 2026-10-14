@@ -13,7 +13,7 @@ process loads only the languages of the project it was started in.
 |---|---|
 | base (`lua/user/plugins/specs.lua`) | Options, keymaps, UI, file explorer, fuzzy finder, git, completion, the LSP / DAP / formatter / Treesitter plumbing, and parsers for files every repo has (bash, json, lua, markdown, vim, yaml). |
 | `go` | gopls, gofumpt / goimports, delve debugging, neotest-go, `go run` runner, Go parsers. |
-| `java` | Java / Spring Boot: jdtls (with Lombok), Java debugging and tests, Maven runner, parsers for java, xml, properties. Run `scripts/install-java-tools.sh` once per machine. |
+| `java` | Java / Spring Boot: jdtls (with Lombok), Java debugging and tests, Maven runner, parsers for java, xml, properties. Run `scripts/install-java-tools.sh` once per machine. jdtls starts (and indexes the project) at launch, even when you open a non-Java file, then warms its JIT with a few read-only requests (`lua/user/java_warmup.lua`); set `NVIM_JAVA_WARMUP=0` to start it only when a Java file is opened. |
 
 Open a Go repo and a Java repo side by side and each Neovim gets its own setup; nothing to switch.
 

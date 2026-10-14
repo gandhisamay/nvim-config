@@ -80,6 +80,8 @@ local function bundles()
   return jars
 end
 
+local warmed_clients = {}
+
 local function start_jdtls(bufnr)
   local launcher = vim.fn.glob(tools .. "/jdtls/plugins/org.eclipse.equinox.launcher_*.jar", true, true)[1]
   if not launcher then
@@ -126,6 +128,26 @@ local function start_jdtls(bufnr)
     },
     root_dir = root,
     capabilities = require("cmp_nvim_lsp").default_capabilities(),
+    handlers = {
+      -- nvim-jdtls echoes this message by default; keep that and, once the
+      -- project is imported, warm up the JVM's JIT so the first rename isn't
+      -- 3-5x slower than the rest.
+      ["language/status"] = function(_, result, ctx)
+        vim.api.nvim_command(
+          string.format(':echohl Function | echo "%s" | echohl None', string.sub(result.message or "", 1, vim.v.echospace))
+        )
+        if result.type == "ServiceReady" and vim.env.NVIM_JAVA_WARMUP ~= "0" and not warmed_clients[ctx.client_id] then
+          warmed_clients[ctx.client_id] = true
+          local client = vim.lsp.get_client_by_id(ctx.client_id)
+          -- Wait for the build triggered by the import to settle.
+          vim.defer_fn(function()
+            if client and not client:is_stopped() and vim.api.nvim_buf_is_valid(bufnr) then
+              require("user.java_warmup").run(client, bufnr, 1)
+            end
+          end, 2000)
+        end
+      end,
+    },
     init_options = {
       bundles = bundles(),
       extendedClientCapabilities = jdtls.extendedClientCapabilities,
@@ -183,6 +205,60 @@ local function start_jdtls(bufnr)
   }, { dap = { hotcodereplace = "auto" } }, { bufnr = bufnr })
 end
 
+-- jdtls imports the Maven project and builds its index when it starts, and
+-- that is most of the latency of the first rename or reference search (~40 s
+-- on a fresh workspace). It normally starts only when a Java file is opened,
+-- so start it at launch instead, like an IDE does: open one of the project's
+-- Java files in a hidden buffer, which runs the same FileType path as a real
+-- one. Opt out with NVIM_JAVA_WARMUP=0.
+local no_warmup_filetypes = { gitcommit = true, gitrebase = true, gitsendemail = true, help = true, man = true }
+
+local function warm_up()
+  if vim.env.NVIM_JAVA_WARMUP == "0" then
+    return
+  end
+
+  -- A Java buffer already starts jdtls; `git commit` and friends shouldn't
+  -- spin up a JVM.
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    if vim.api.nvim_buf_is_loaded(buf) and (vim.bo[buf].filetype == "java" or no_warmup_filetypes[vim.bo[buf].filetype]) then
+      return
+    end
+  end
+
+  local name = vim.api.nvim_buf_get_name(0)
+  local root = vim.fs.root(name ~= "" and name or vim.uv.cwd(), profile.languages.java.root_markers)
+  if not root or vim.fn.executable("rg") == 0 then
+    return
+  end
+
+  -- Prefer a main source file; any .java file works to pick the module.
+  vim.system({ "rg", "--files", "-g", "*.java" }, { cwd = root, text = true }, function(result)
+    local files = vim.split(result.stdout or "", "\n", { trimempty = true })
+    local main = vim.tbl_filter(function(file)
+      return file:find("/src/main/java/", 1, true) or file:find("^src/main/java/")
+    end, files)
+    -- The largest main source file is usually a core class, which gives the
+    -- JIT warm-up the most to chew on (many symbols, callers, overrides).
+    local first, size = files[1], -1
+    for _, file in ipairs(#main > 0 and main or files) do
+      local stat = vim.uv.fs_stat(root .. "/" .. file)
+      if stat and stat.size > size then
+        first, size = file, stat.size
+      end
+    end
+    if not first then
+      return
+    end
+    vim.schedule(function()
+      local buf = vim.fn.bufadd(root .. "/" .. first)
+      vim.bo[buf].buflisted = false
+      vim.fn.bufload(buf)
+      vim.bo[buf].filetype = "java"
+    end)
+  end)
+end
+
 -- Run the Spring Boot app of the module the current file belongs to, using the
 -- project's Maven wrapper when it has one.
 local function run_spring_boot()
@@ -217,7 +293,10 @@ local plugins = {
           start_jdtls(args.buf)
         end,
       })
-      start_jdtls(vim.api.nvim_get_current_buf())
+      -- Not for the warm-up, which can run while a non-Java buffer is current.
+      if vim.bo.filetype == "java" then
+        start_jdtls(vim.api.nvim_get_current_buf())
+      end
     end,
   },
 }
@@ -225,6 +304,12 @@ local plugins = {
 if not active then
   return plugins
 end
+
+vim.api.nvim_create_autocmd("VimEnter", {
+  group = vim.api.nvim_create_augroup("user_java_warmup", { clear = true }),
+  once = true,
+  callback = warm_up,
+})
 
 -- Acts in Java buffers, and in files of a Java build (pom.xml, application.yml, ...).
 profile.map("java", "n", "<leader>r", run_spring_boot, "Run Spring Boot app")
