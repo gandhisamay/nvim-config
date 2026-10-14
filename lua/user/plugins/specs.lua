@@ -534,6 +534,34 @@ return {
         }, {
           { name = "buffer", keyword_length = 3 },
         }),
+        sorting = {
+          -- The default order, minus `kind` (which puts snippets first and
+          -- groups by kind) and with `sort_text` moved up: that is where
+          -- servers like jdtls and gopls put their relevance ranking.
+          comparators = {
+            cmp.config.compare.offset,
+            cmp.config.compare.exact,
+            cmp.config.compare.score,
+            cmp.config.compare.sort_text,
+            cmp.config.compare.recently_used,
+            cmp.config.compare.locality,
+            cmp.config.compare.length,
+            cmp.config.compare.order,
+          },
+        },
+        formatting = {
+          fields = { "abbr", "kind", "menu" },
+          format = function(entry, item)
+            local source = ({ nvim_lsp = "LSP", luasnip = "Snip", path = "Path", buffer = "Buf" })[entry.source.name]
+            local detail = entry.completion_item.labelDetails
+            detail = detail and (detail.description or detail.detail)
+            item.menu = detail and (detail .. "  " .. source) or source
+            return item
+          end,
+        },
+        window = {
+          documentation = cmp.config.window.bordered(),
+        },
       })
     end,
   },

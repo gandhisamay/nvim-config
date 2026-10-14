@@ -149,6 +149,9 @@ local function start_jdtls(bufnr)
           organizeImports = { starThreshold = 9999, staticStarThreshold = 9999 },
         },
         completion = {
+          -- Default "firstLetter" hides `String` while typing `string`.
+          matchCase = "off",
+          guessMethodArguments = "insertBestGuessedArguments",
           favoriteStaticMembers = {
             "org.junit.jupiter.api.Assertions.*",
             "org.mockito.Mockito.*",
