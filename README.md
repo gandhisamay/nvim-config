@@ -113,6 +113,140 @@ Then add it to the table above.
 The old `lua_config`, `go` and `java` branches are from the branch-per-language setup and are
 kept only for history. `vim_script` is the previous Vimscript config.
 
+## Keymaps
+
+`<leader>` is `<Space>`. Mode is normal unless noted (`x` = visual, `i` = insert, `t` = terminal).
+
+### Files, search and navigation
+
+| Key | Action |
+|---|---|
+| `<leader>f` / `<leader>ff` | Find project files |
+| `<leader>l` / `<leader>fg` | Live grep project |
+| `<leader>fb` | Find buffers |
+| `<leader>fr` | Recent files |
+| `<leader>fs` | Document symbols |
+| `<leader>fh` | Help tags |
+| `<leader>/` | Find in file |
+| `<leader>*` | Find word under cursor in file |
+| `<Esc>` | Clear search highlight |
+| `<leader>y` | Toggle file explorer |
+| `<leader>yg` | Toggle git explorer |
+| `<leader>a` | Toggle symbol outline |
+| `{` / `}` | Previous / next symbol (in the outline) |
+
+### Buffers and windows
+
+| Key | Action |
+|---|---|
+| `<S-h>` / `<S-l>` | Previous / next buffer |
+| `<S-w>` | Close current buffer |
+| `<leader>bd` | Delete buffer |
+| `<C-h>` `<C-j>` `<C-k>` `<C-l>` | Focus left / lower / upper / right window (also in `t`) |
+| `<C-Up>` / `<C-Down>` | Increase / decrease window height |
+| `<C-Left>` / `<C-Right>` | Decrease / increase window width (also in `t`) |
+| `<leader>tk` / `<leader>th` | Make split horizontal / vertical |
+
+### Editing
+
+| Key | Action |
+|---|---|
+| `jk` (`i`) | Exit insert mode |
+| `<C-s>` (`n`, `i`, `x`) | Save file |
+| `<C-a>` | Copy entire file |
+| `<A-s>` | Toggle autosave |
+| `<A-m>` | Record macro (`q` is disabled) |
+| `<` / `>` (`x`) | Indent left / right, keeping the selection |
+| `J` / `K`, `<A-j>` / `<A-k>` (`x`) | Move selection down / up |
+| `p` (`x`) | Paste without replacing the register |
+| `F` | Format buffer |
+| `<A-j>` | Format JSON with `jq` |
+
+### LSP and diagnostics
+
+| Key | Action |
+|---|---|
+| `gd` / `gD` | Go to definition / declaration |
+| `gr` | Find references |
+| `gi` / `gI` | Go to implementation |
+| `K` | Hover documentation |
+| `<C-k>` | Signature help |
+| `<leader>rn` | Rename symbol |
+| `<leader>ca` / `<leader>i` | Code action (`ca` also in `x`) |
+| `<leader>ld` / `gl` | Line diagnostics |
+| `<leader>q` | Diagnostics list |
+| `[d` / `]d` | Previous / next diagnostic |
+| `<leader>uh` | Toggle inlay hints |
+
+### Git
+
+| Key | Action |
+|---|---|
+| `<leader>g` | LazyGit |
+| `<leader>df` | Preview changed hunk (old code) |
+| `<leader>dr` | Reset hunk (revert to committed code) |
+| `<leader>dR` | Reset buffer (revert all changes in the file) |
+
+### Terminals
+
+| Key | Action |
+|---|---|
+| `<leader>h` / `<leader>tt` | Horizontal terminal |
+| `<leader>m` / `<leader>tf` | Floating terminal |
+| `<C-q>` (`t`) | Hide terminal |
+
+### Debugging
+
+| Key | Action |
+|---|---|
+| `<F5>` | Debug continue |
+| `<F10>` / `<F11>` / `<F12>` | Step over / into / out |
+| `<leader>db` | Toggle breakpoint |
+| `<leader>du` | Toggle debug UI |
+
+### Claude Code
+
+| Key | Action |
+|---|---|
+| `<leader>ai` | Toggle Claude Code |
+| `<C-.>` (`n`, `i`, `x`, `t`) | Focus Claude Code |
+| `<leader>xf` | Send file to Claude Code |
+| `<leader>xv` (`x`) | Send selection to Claude Code |
+
+### Sessions
+
+| Key | Action |
+|---|---|
+| `<leader>qs` | Restore session |
+| `<leader>ql` | Restore last session |
+| `<leader>qS` | Select session |
+| `<leader>qd` | Don't save this session |
+
+### Language-specific
+
+Only active in buffers of that language (see [How languages are picked](#how-languages-are-picked)).
+
+| Key | Go | Java |
+|---|---|---|
+| `<leader>r` | `go run .` | Run Spring Boot app |
+| `<leader>tn` | Run nearest test | Run nearest test |
+| `<leader>tF` | Run test file | Run test class |
+| `<leader>ts` | Test summary | |
+| `<leader>to` | Test output | |
+| `<leader>da` | Debug with arguments | |
+| `<leader>dt` | Debug Go test | |
+| `<leader>oi` | | Organize imports |
+| `<leader>ev` (`n`, `x`) | | Extract variable |
+| `<leader>ec` | | Extract constant |
+| `<leader>em` (`x`) | | Extract method |
+
+### Misc
+
+| Key | Action |
+|---|---|
+| `<leader>cb` / `<leader>ct` / `<leader>cn` | CPBooster test / submit / clone |
+| `<leader>w` | Run file in MySQL |
+
 ## Requirements
 
 - Neovim 0.12+
