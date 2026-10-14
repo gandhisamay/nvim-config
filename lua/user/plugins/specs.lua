@@ -10,7 +10,14 @@ local function find_project_files()
 end
 
 local function grep_project()
-  require("fzf-lua").live_grep({ cwd = util.project_root() })
+  require("fzf-lua").live_grep({
+    cwd = util.project_root(),
+    -- Match the query literally: live_grep otherwise treats it as a regex, so
+    -- pasting a line containing "(", "[" or "." (e.g. "foo (NOFD-5500)")
+    -- finds nothing. Same flags as fzf-lua's default rg_opts plus -F.
+    rg_opts = "--column --line-number --no-heading --color=always --smart-case "
+      .. "--max-columns=4096 --fixed-strings -e",
+  })
 end
 
 local lazygit_terminal
