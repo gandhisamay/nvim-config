@@ -153,6 +153,8 @@ return {
       enable_diagnostics = true,
       enable_git_status = true,
       default_component_configs = {
+        -- Keep deeply nested paths from pushing names off the edge.
+        indent = { indent_size = 1, padding = 0 },
         name = { use_git_status_colors = true },
         git_status = {
           symbols = {
@@ -171,6 +173,10 @@ return {
       filesystem = {
         bind_to_cwd = true,
         follow_current_file = { enabled = true },
+        -- Show single-child chains like src/main/java/com/foo as one row.
+        -- "deep" scanning is needed to detect them before expanding.
+        group_empty_dirs = true,
+        scan_mode = "deep",
         hijack_netrw_behavior = "open_default",
         use_libuv_file_watcher = true,
         filtered_items = {
@@ -188,6 +194,14 @@ return {
       window = {
         position = "right",
         width = 36,
+        mappings = {
+          -- Temporarily widen the tree when a path is still too long.
+          ["Z"] = function(state)
+            local win = state.winid
+            local wide = vim.api.nvim_win_get_width(win) > 36
+            vim.api.nvim_win_set_width(win, wide and 36 or 60)
+          end,
+        },
       },
     },
   },
