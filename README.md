@@ -231,7 +231,8 @@ Only active in buffers of that language (see [How languages are picked](#how-lan
 | `<leader>r` | `go run .` | Run Spring Boot app |
 | `<leader>tn` | Run nearest test | Run nearest test |
 | `<leader>tF` | Run test file | Run test class |
-| `<leader>ts` | Test summary | |
+| `<leader>tA` | | Run all project tests |
+| `<leader>ts` | Test summary | Test panel (live results; `<CR>` on a failure shows its output) |
 | `<leader>to` | Test output | |
 | `<leader>da` | Debug with arguments | |
 | `<leader>dt` | Debug Go test | |

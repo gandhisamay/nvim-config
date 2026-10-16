@@ -116,6 +116,20 @@ local function start_jdtls(bufnr)
     return
   end
 
+  -- Mapped before jdtls attaches, so pressing them early waits for it instead
+  -- of doing nothing.
+  local java_tests = require("user.java_tests")
+  vim.keymap.set("n", "<leader>tn", function()
+    java_tests.run("nearest")
+  end, { buffer = bufnr, desc = "Run nearest test" })
+  vim.keymap.set("n", "<leader>tF", function()
+    java_tests.run("class")
+  end, { buffer = bufnr, desc = "Run test class" })
+  vim.keymap.set("n", "<leader>tA", function()
+    java_tests.run("project")
+  end, { buffer = bufnr, desc = "Run all project tests" })
+  vim.keymap.set("n", "<leader>ts", java_tests.toggle_panel, { buffer = bufnr, desc = "Test panel" })
+
   local platform = (is_mac and "config_mac" or "config_linux") .. (is_arm and "_arm" or "")
   local workspace = vim.fn.stdpath("cache") .. "/jdtls/" .. root:gsub("[/\\:]", "%%")
   local jdtls = require("jdtls")
@@ -154,13 +168,24 @@ local function start_jdtls(bufnr)
       -- nvim-jdtls echoes this message by default; keep that and, once the
       -- project is imported, warm up the JVM's JIT so the first rename isn't
       -- 3-5x slower than the rest.
-      ["language/status"] = function(_, result, ctx)
+      -- nvim-jdtls wraps this handler and calls it without `ctx` (errors are
+      -- swallowed by its pcall), so find the client by its root instead.
+      ["language/status"] = function(_, result)
         vim.api.nvim_command(
           string.format(':echohl Function | echo "%s" | echohl None', string.sub(result.message or "", 1, vim.v.echospace))
         )
-        if result.type == "ServiceReady" and vim.env.NVIM_JAVA_WARMUP ~= "0" and not warmed_clients[ctx.client_id] then
-          warmed_clients[ctx.client_id] = true
-          local client = vim.lsp.get_client_by_id(ctx.client_id)
+        if result.type ~= "ServiceReady" then
+          return
+        end
+        local client = vim.iter(vim.lsp.get_clients({ name = "jdtls" })):find(function(c)
+          return c.root_dir == root
+        end)
+        if not client then
+          return
+        end
+        require("user.java_tests").mark_ready(client.id)
+        if vim.env.NVIM_JAVA_WARMUP ~= "0" and not warmed_clients[client.id] then
+          warmed_clients[client.id] = true
           -- Wait for the build triggered by the import to settle.
           vim.defer_fn(function()
             if client and not client:is_stopped() and vim.api.nvim_buf_is_valid(bufnr) then
@@ -221,8 +246,6 @@ local function start_jdtls(bufnr)
       map("x", "<leader>em", function()
         jdtls.extract_method(true)
       end, "Extract method")
-      map("n", "<leader>tn", jdtls.test_nearest_method, "Run nearest test")
-      map("n", "<leader>tF", jdtls.test_class, "Run test class")
     end,
   }, { dap = { hotcodereplace = "auto" } }, { bufnr = bufnr })
 end

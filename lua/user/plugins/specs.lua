@@ -756,8 +756,17 @@ return {
       dap.listeners.before.attach.dapui_config = function()
         dapui.open()
       end
-      dap.listeners.before.launch.dapui_config = function()
-        dapui.open()
+      -- Test runs (user.java_tests) show their own results; open the UI for
+      -- them only if they stop at a breakpoint.
+      dap.listeners.before.launch.dapui_config = function(session)
+        if not session.config.nvimTestRun then
+          dapui.open()
+        end
+      end
+      dap.listeners.after.event_stopped.dapui_config = function(session)
+        if session.config.nvimTestRun then
+          dapui.open()
+        end
       end
       dap.listeners.before.event_terminated.dapui_config = function()
         dapui.close()
